@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewTab.Ai</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #0b0c10;
+    --card: #131419;
+    --card-raised: #1a1c22;
+    --line: #24262e;
+    --ink: #eceef2;
+    --ink-soft: #838794;
+    --ink-faint: #565a66;
+    --accent: #c9a227;
+    --accent-dim: #7a6520;
+    --user-bubble: #1f2129;
+    --ai-bubble: #16171d;
+    --danger: #e0836b;
+    --danger-bg: #211416;
+    --danger-line: #3a2124;
+    --radius: 16px;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .chat{
+    width: 100%;
+    max-width: 600px;
+    height: 86vh;
+    max-height: 800px;
+    background: var(--card);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,0.6);
+    position: relative;
+  }
+
+  .header{
+    padding: 22px 24px 18px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    background:
+      radial-gradient(ellipse 400px 120px at 20% 0%, rgba(201,162,39,0.08), transparent);
+  }
+
+  .brand h1{
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .cursor{
+    display: inline-block;
+    width: 3px;
+    height: 18px;
+    background: var(--accent);
+    margin-left: 6px;
+    animation: blink 1.1s step-end infinite;
+  }
+
+  @keyframes blink{
+    0%, 45%{ opacity: 1; }
+    50%, 100%{ opacity: 0; }
+  }
+
+  .brand .sub{
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+    letter-spacing: 0.01em;
+  }
+
+  .token-meter{
+    text-align: right;
+    font-family: var(--font-mono);
+  }
+
+  .token-meter .count{
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .token-meter .label{
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  #messages{
+    flex: 1;
+    padding: 22px 22px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  #messages::-webkit-scrollbar{ width: 8px; }
+  #messages::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 8px; }
+
+  .empty-state{
+    margin: auto;
+    text-align: center;
+    color: var(--ink-faint);
+    max-width: 260px;
+  }
+
+  .empty-state .glyph{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .empty-state p{
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .row{
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+  }
+
+  .row.user{ align-self: flex-end; align-items: flex-end; }
+  .row.ai{ align-self: flex-start; align-items: flex-start; }
+
+  .message{
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    white-space: pre-wrap;
+    line-height: 1.55;
+    font-size: 14.5px;
+  }
+
+  .row.user .message{
+    background: var(--user-bubble);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-bottom-right-radius: 5px;
+  }
+
+  .row.ai .message{
+    background: var(--ai-bubble);
+    color: var(--ink);
+    border-left: 2px solid var(--accent-dim);
+    border-bottom-left-radius: 5px;
+  }
+
+  .row.ai .message.thinking{
+    color: var(--ink-faint);
+    font-style: italic;
+    border-left-color: var(--ink-faint);
+  }
+
+  .meta{
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    margin-top: 5px;
+    padding: 0 4px;
+  }
+
+  .input-area{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px;
+    border-top: 1px solid var(--line);
+    background: var(--card-raised);
+  }
+
+  input{
+    flex: 1;
+    padding: 13px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input::placeholder{ color: var(--ink-faint); }
+
+  input:focus{
+    border-color: var(--accent-dim);
+  }
+
+  button{
+    padding: 13px 22px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #16130a;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+
+  button:hover{ background: #dcb236; }
+  button:active{ transform: scale(0.97); }
+
+  button:focus-visible, input:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Toast / note popup */
+  .toast-layer{
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 20px;
+    pointer-events: none;
+  }
+
+  .toast{
+    pointer-events: auto;
+    max-width: 92%;
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-line);
+    color: #f0c9bd;
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,0.7);
+    animation: rise 0.25s ease;
+  }
+
+  @keyframes rise{
+    from{ opacity: 0; transform: translateY(10px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+
+  .toast .icon{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--danger);
+    flex-shrink: 0;
+  }
+
+  .toast button.close{
+    all: unset;
+    cursor: pointer;
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-left: auto;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 480px){
+    .chat{ height: 92vh; border-radius: 16px; }
+    .row{ max-width: 90%; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .toast{ animation: none; }
+    .cursor{ animation: none; opacity: 1; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="chat">
+
+  <div class="header">
+    <div class="brand">
+      <h1>NewTab.Ai<span class="cursor"></span></h1>
+      <div class="sub">NewTabGmail@Gmail.com</div>
+    </div>
+    <div class="token-meter">
+      <div class="count" id="tokenCount">$0.00</div>
+      <div class="label">spent so far</div>
+    </div>
+  </div>
+
+  <div id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="glyph">&gt;_</div>
+      <p>Ask anything.</p>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input
+      id="input"
+      type="text"
+      placeholder="Type a message…"
+      onkeydown="if(event.key === 'Enter') sendMessage()"
+    >
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <div class="toast-layer" id="toastLayer"></div>
+
+</div>
+
+<script>
+  const API_KEY = "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"; //hard codded to assert dominance 
+
+  const MODEL = "openai/gpt-oss-20b";
+  const PRICE_PER_M_INPUT = 0.03;
+  const PRICE_PER_M_OUTPUT = 0.13;
+
+  const messages = [];
+  let sessionCost = 0;
+
+  function formatCost(amount){
+    if (amount === 0) return "$0.00";
+    if (amount < 0.01) return "$" + amount.toFixed(6);
+    return "$" + amount.toFixed(2);
+  }
+
+  function updateTokenMeter(){
+    document.getElementById("tokenCount").textContent = formatCost(sessionCost);
+  }
+
+  function showToast(text){
+    const layer = document.getElementById("toastLayer");
+    layer.innerHTML = "";
+
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerHTML = `
+      <span class="icon">!</span>
+      <span>${text}</span>
+      <button class="close" aria-label="Dismiss">✕</button>
+    `;
+    toast.querySelector(".close").onclick = () => toast.remove();
+
+    layer.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 8000);
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("input");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    document.getElementById("emptyState")?.remove();
+
+    input.value = "";
+
+    addMessage(text, "user");
+
+    messages.push({
+      role: "user",
+      content: text
+    });
+
+    const thinkingRow = addMessage("Computing...", "ai", { thinking: true });
+
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: messages
+        })
+      });
+
+      const data = await response.json();
+
+      thinkingRow.remove();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "API request failed");
+      }
+
+      const reply = data.choices[0].message.content;
+      const usage = data.usage;
+
+      let messageCost = null;
+      if (usage) {
+        const inputCost = (usage.prompt_tokens || 0) / 1_000_000 * PRICE_PER_M_INPUT;
+        const outputCost = (usage.completion_tokens || 0) / 1_000_000 * PRICE_PER_M_OUTPUT;
+        messageCost = inputCost + outputCost;
+      }
+
+      addMessage(reply, "ai", {
+        cost: messageCost
+      });
+
+      messages.push({
+        role: "assistant",
+        content: reply
+      });
+
+      if (messageCost !== null) {
+        sessionCost += messageCost;
+        updateTokenMeter();
+      }
+
+    } catch (error) {
+      thinkingRow.remove();
+
+      showToast("Ai cost LOTS of money, and I can't pay for it because I don't have a job, so at the moment I have it capped at 50 generated responses per day, looks like everyone else beat you to it.");
+
+      console.error(error);
+    }
+  }
+
+  function addMessage(text, type, opts = {}) {
+    const messagesDiv = document.getElementById("messages");
+
+    const row = document.createElement("div");
+    row.className = "row " + type;
+
+    const bubble = document.createElement("div");
+    bubble.className = "message" + (opts.thinking ? " Computing..." : "");
+    bubble.textContent = text;
+    row.appendChild(bubble);
+
+    if (opts.cost !== undefined && opts.cost !== null) {
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = formatCost(opts.cost) + " this response";
+      row.appendChild(meta);
+    }
+
+    messagesDiv.appendChild(row);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    return row;
+  }
+</script>
+
+</body>
+</html>
