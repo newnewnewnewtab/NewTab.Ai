@@ -121,6 +121,32 @@
     letter-spacing: 0.08em;
   }
 
+  .earn-btn{
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  }
+
+  .earn-btn:hover:not(:disabled){
+    background: var(--accent);
+    color: #16130a;
+  }
+
+  .earn-btn:disabled{
+    opacity: 0.45;
+    cursor: not-allowed;
+    color: var(--ink-faint);
+    border-color: var(--line);
+  }
+
   #messages{
     flex: 1;
     padding: 22px 22px;
@@ -323,8 +349,9 @@
       <div class="sub">NewTabGmail@Gmail.com</div>
     </div>
     <div class="token-meter">
-      <div class="count" id="tokenCount">$0.00</div>
-      <div class="label">spent so far</div>
+      <div class="count" id="tokenCount">0</div>
+      <div class="label">credits</div>
+      <button class="earn-btn" id="earnBtn" onclick="earnCredit()">+1 Credit</button>
     </div>
   </div>
 
@@ -353,20 +380,44 @@
   const API_KEY = "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"; //hard codded to assert dominance 
 
   const MODEL = "openai/gpt-oss-20b";
-  const PRICE_PER_M_INPUT = 0.03;
-  const PRICE_PER_M_OUTPUT = 0.13;
+  const CREDIT_LINK = "https://omg10.com/4/11589934";
+  const EARN_COOLDOWN_SECONDS = 5;
+  const CREDIT_COST_PER_MESSAGE = 1;
 
   const messages = [];
-  let sessionCost = 0;
+  let credits = 0;
+  let cooldownActive = false;
 
-  function formatCost(amount){
-    if (amount === 0) return "$0.00";
-    if (amount < 0.01) return "$" + amount.toFixed(6);
-    return "$" + amount.toFixed(2);
+  function updateCreditMeter(){
+    document.getElementById("tokenCount").textContent = credits;
   }
 
-  function updateTokenMeter(){
-    document.getElementById("tokenCount").textContent = formatCost(sessionCost);
+  function earnCredit(){
+    if (cooldownActive) return;
+
+    window.open(CREDIT_LINK, "_blank");
+
+    credits += 1;
+    updateCreditMeter();
+
+    cooldownActive = true;
+    const btn = document.getElementById("earnBtn");
+    btn.disabled = true;
+
+    let remaining = EARN_COOLDOWN_SECONDS;
+    btn.textContent = `Wait ${remaining}s`;
+
+    const interval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        btn.disabled = false;
+        btn.textContent = "+1 Credit";
+        cooldownActive = false;
+      } else {
+        btn.textContent = `Wait ${remaining}s`;
+      }
+    }, 1000);
   }
 
   function showToast(text){
@@ -393,9 +444,17 @@
 
     if (!text) return;
 
+    if (credits < CREDIT_COST_PER_MESSAGE) {
+      showToast("You're out of credits. Open the credit link to earn more before asking another question.");
+      return;
+    }
+
     document.getElementById("emptyState")?.remove();
 
     input.value = "";
+
+    credits -= CREDIT_COST_PER_MESSAGE;
+    updateCreditMeter();
 
     addMessage(text, "user");
 
@@ -428,28 +487,13 @@
       }
 
       const reply = data.choices[0].message.content;
-      const usage = data.usage;
 
-      let messageCost = null;
-      if (usage) {
-        const inputCost = (usage.prompt_tokens || 0) / 1_000_000 * PRICE_PER_M_INPUT;
-        const outputCost = (usage.completion_tokens || 0) / 1_000_000 * PRICE_PER_M_OUTPUT;
-        messageCost = inputCost + outputCost;
-      }
-
-      addMessage(reply, "ai", {
-        cost: messageCost
-      });
+      addMessage(reply, "ai");
 
       messages.push({
         role: "assistant",
         content: reply
       });
-
-      if (messageCost !== null) {
-        sessionCost += messageCost;
-        updateTokenMeter();
-      }
 
     } catch (error) {
       thinkingRow.remove();
@@ -470,13 +514,6 @@
     bubble.className = "message" + (opts.thinking ? " Computing..." : "");
     bubble.textContent = text;
     row.appendChild(bubble);
-
-    if (opts.cost !== undefined && opts.cost !== null) {
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = formatCost(opts.cost) + " this response";
-      row.appendChild(meta);
-    }
 
     messagesDiv.appendChild(row);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
