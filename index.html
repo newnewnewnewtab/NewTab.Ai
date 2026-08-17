@@ -384,12 +384,25 @@
   const EARN_COOLDOWN_SECONDS = 5;
   const CREDIT_COST_PER_MESSAGE = 1;
 
+  const CREDITS_STORAGE_KEY = "newtabai_credits";
+
   const messages = [];
-  let credits = 0;
+  let credits = loadCredits();
   let cooldownActive = false;
+
+  function loadCredits(){
+    const stored = localStorage.getItem(CREDITS_STORAGE_KEY);
+    const parsed = parseInt(stored, 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function saveCredits(){
+    localStorage.setItem(CREDITS_STORAGE_KEY, String(credits));
+  }
 
   function updateCreditMeter(){
     document.getElementById("tokenCount").textContent = credits;
+    saveCredits();
   }
 
   function earnCredit(){
@@ -520,6 +533,9 @@
 
     return row;
   }
+
+  // Reflect any credits loaded from localStorage in the UI on page load
+  document.getElementById("tokenCount").textContent = credits;
 </script>
 
 </body>
