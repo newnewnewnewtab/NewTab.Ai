@@ -351,7 +351,7 @@
     <div class="token-meter">
       <div class="count" id="tokenCount">0</div>
       <div class="label">credits</div>
-      <button class="earn-btn" id="earnBtn" onclick="earnCredit()">+1 Credit</button>
+      <button class="earn-btn" id="earnBtn" onclick="earnCredit()">Earn Credit</button>
     </div>
   </div>
 
@@ -425,7 +425,7 @@
       if (remaining <= 0) {
         clearInterval(interval);
         btn.disabled = false;
-        btn.textContent = "+1 Credit";
+        btn.textContent = "Earn Credit";
         cooldownActive = false;
       } else {
         btn.textContent = `Wait ${remaining}s`;
@@ -458,7 +458,7 @@
     if (!text) return;
 
     if (credits < CREDIT_COST_PER_MESSAGE) {
-      showToast("You're out of credits. Open the credit link to earn more before asking another question.");
+      showToast("You're out of credits. Open the credit link to earn more.");
       return;
     }
 
@@ -511,7 +511,7 @@
     } catch (error) {
       thinkingRow.remove();
 
-      showToast("Ai cost LOTS of money, and I can't pay for it because I don't have a job, so at the moment I have it capped at $0.01 per day, which is about 2000 simple questions, 500 medium questions, or <50 Very complex questions.");
+      showToast("There currently an issue, please try again tomorrow.");
 
       console.error(error);
     }
